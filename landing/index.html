@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClapToStart – Klatsch. Claude öffnet sich.</title>
+  <meta name="description" content="ClapToStart öffnet Claude auf deinem Mac – einfach zweimal klatschen. Kostenlos." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #09090f;
+      --surface:   #111118;
+      --surface2:  #18181f;
+      --border:    rgba(255,255,255,0.07);
+      --text:      #f0f0f5;
+      --muted:     #6b7280;
+      --accent:    #7c3aed;
+      --accent2:   #a855f7;
+      --grad:      linear-gradient(135deg, #667eea 0%, #a855f7 50%, #ec4899 100%);
+      --grad-soft: linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(168,85,247,0.15) 100%);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Nav ──────────────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 48px;
+      background: rgba(9,9,15,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .lang-toggle {
+      display: flex;
+      gap: 4px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .lang-btn {
+      padding: 6px 14px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-family: inherit;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.02em;
+    }
+
+    .lang-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* ── Hero ─────────────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      background: var(--grad-soft);
+      border: 1px solid rgba(168,85,247,0.3);
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 32px;
+      letter-spacing: 0.03em;
+    }
+
+    .clap-emoji {
+      display: inline-block;
+      animation: clap 1.4s ease-in-out infinite;
+      font-size: 1rem;
+    }
+
+    @keyframes clap {
+      0%, 100% { transform: rotate(-10deg) scale(1); }
+      50%       { transform: rotate(10deg) scale(1.2); }
+    }
+
+    h1 {
+      font-size: clamp(3rem, 8vw, 6.5rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      margin-bottom: 24px;
+    }
+
+    .gradient-text {
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto 48px;
+      line-height: 1.7;
+      font-weight: 400;
+    }
+
+    .cta-group {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      background: var(--grad);
+      border: none;
+      border-radius: 14px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 8px 32px rgba(124,58,237,0.4);
+      letter-spacing: -0.01em;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(124,58,237,0.55);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 28px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .btn-secondary:hover {
+      border-color: rgba(255,255,255,0.2);
+      color: var(--text);
+    }
+
+    .hero-note {
+      margin-top: 20px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* Demo visual */
+    .hero-visual {
+      margin-top: 72px;
+      position: relative;
+      width: min(700px, 92vw);
+    }
+
+    .demo-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+    }
+
+    .demo-icon {
+      font-size: 3.5rem;
+      flex-shrink: 0;
+      animation: pulse-icon 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-icon {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.08); }
+    }
+
+    .demo-text { text-align: left; }
+    .demo-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+    .demo-desc  { font-size: 0.9rem; color: var(--muted); }
+
+    .wave {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 40px;
+      margin-left: auto;
+    }
+
+    .wave span {
+      display: block;
+      width: 4px;
+      background: var(--grad);
+      border-radius: 2px;
+      animation: wave-bar 1.2s ease-in-out infinite;
+    }
+
+    .wave span:nth-child(1) { height: 14px; animation-delay: 0s; }
+    .wave span:nth-child(2) { height: 28px; animation-delay: 0.1s; }
+    .wave span:nth-child(3) { height: 20px; animation-delay: 0.2s; }
+    .wave span:nth-child(4) { height: 36px; animation-delay: 0.3s; }
+    .wave span:nth-child(5) { height: 22px; animation-delay: 0.4s; }
+    .wave span:nth-child(6) { height: 12px; animation-delay: 0.5s; }
+    .wave span:nth-child(7) { height: 30px; animation-delay: 0.15s; }
+
+    @keyframes wave-bar {
+      0%, 100% { transform: scaleY(0.4); opacity: 0.6; }
+      50%       { transform: scaleY(1);   opacity: 1; }
+    }
+
+    /* ── Section shared ───────────────────────────────────────────────── */
+    section { padding: 100px 24px; }
+
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    .section-sub {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.7;
+    }
+
+    /* ── Features ─────────────────────────────────────────────────────── */
+    .features { background: var(--surface); }
+
+    .features-header { text-align: center; margin-bottom: 64px; }
+    .features-header .section-sub { margin: 0 auto; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(124,58,237,0.4);
+      transform: translateY(-4px);
+    }
+
+    .feature-icon {
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    .feature-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .feature-desc {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── How it works ─────────────────────────────────────────────────── */
+    .how { position: relative; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 40px;
+      margin-top: 64px;
+    }
+
+    .step { position: relative; }
+
+    .step-number {
+      font-size: 4rem;
+      font-weight: 900;
+      line-height: 1;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+      opacity: 0.6;
+    }
+
+    .step-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .step-desc {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── Download ─────────────────────────────────────────────────────── */
+    .download {
+      background: var(--surface);
+      text-align: center;
+    }
+
+    .download-card {
+      background: var(--grad-soft);
+      border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 28px;
+      padding: 64px 40px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .download-emoji {
+      font-size: 4rem;
+      display: block;
+      margin-bottom: 24px;
+    }
+
+    .download-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 14px;
+    }
+
+    .download-sub {
+      font-size: 1rem;
+      color: var(--muted);
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+
+    .requirements {
+      margin-top: 28px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .requirements span { display: inline-block; margin: 0 8px; }
+
+    /* ── Footer ───────────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 48px 24px;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    footer a { color: var(--accent2); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Responsive ───────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      nav { padding: 16px 20px; }
+      .demo-card { flex-direction: column; text-align: center; }
+      .demo-text { text-align: center; }
+      .wave { margin: 0 auto; }
+      .btn-primary, .btn-secondary { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-logo">ClapToStart</div>
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('de')" id="btn-de">DE</button>
+    <button class="lang-btn"        onclick="setLang('en')" id="btn-en">EN</button>
+  </div>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="clap-emoji">👏</span>
+    <span data-de="Kostenlos · Nur für macOS" data-en="Free · macOS only">Kostenlos · Nur für macOS</span>
+  </div>
+
+  <h1>
+    <span data-de="Klatsch." data-en="Clap.">Klatsch.</span><br />
+    <span class="gradient-text" data-de="Claude öffnet sich." data-en="Claude opens.">Claude öffnet sich.</span>
+  </h1>
+
+  <p class="hero-sub" data-de="Zweimal klatschen – und Claude startet sofort. ClapToStart läuft unsichtbar im Hintergrund und ist immer bereit, seit dem ersten Systemstart." data-en="Clap twice – and Claude launches instantly. ClapToStart runs silently in the background, ready from the moment your Mac boots.">
+    Zweimal klatschen – und Claude startet sofort. ClapToStart läuft unsichtbar im Hintergrund und ist immer bereit, seit dem ersten Systemstart.
+  </p>
+
+  <div class="cta-group">
+    <a href="ClapToStart.dmg" class="btn-primary" download>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span data-de="Download – kostenlos" data-en="Download – free">Download – kostenlos</span>
+    </a>
+    <a href="#how" class="btn-secondary">
+      <span data-de="Wie funktioniert's?" data-en="How does it work?">Wie funktioniert's?</span>
+    </a>
+  </div>
+
+  <p class="hero-note" data-de="Kein App Store · Kein Abo · Keine Registrierung" data-en="No App Store · No subscription · No sign-up">
+    Kein App Store · Kein Abo · Keine Registrierung
+  </p>
+
+  <div class="hero-visual">
+    <div class="demo-card">
+      <div class="demo-icon">👏</div>
+      <div class="demo-text">
+        <div class="demo-title" data-de="Klatschen erkannt!" data-en="Clap detected!">Klatschen erkannt!</div>
+        <div class="demo-desc"  data-de="Claude wird geöffnet …" data-en="Opening Claude …">Claude wird geöffnet …</div>
+      </div>
+      <div class="wave">
+        <span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ───────────────────────────────────────────────────────── -->
+<section class="features">
+  <div class="container">
+    <div class="features-header">
+      <div class="section-label" data-de="Funktionen" data-en="Features">Funktionen</div>
+      <h2 class="section-title" data-de="Einfach. Schnell. Immer da." data-en="Simple. Fast. Always there.">Einfach. Schnell. Immer da.</h2>
+      <p class="section-sub" data-de="ClapToStart macht genau eine Sache – und die perfekt." data-en="ClapToStart does exactly one thing – and does it perfectly.">
+        ClapToStart macht genau eine Sache – und die perfekt.
+      </p>
+    </div>
+
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <span class="feature-icon">🎤</span>
+        <div class="feature-title" data-de="Klatsch-Erkennung" data-en="Clap Detection">Klatsch-Erkennung</div>
+        <p class="feature-desc" data-de="Intelligente Doppelklatschen-Erkennung via Mikrofon. Passt sich automatisch an den Umgebungslärm an, damit kein falsches Auslösen passiert." data-en="Smart double-clap detection via microphone. Automatically adapts to ambient noise to prevent false triggers.">
+          Intelligente Doppelklatschen-Erkennung via Mikrofon. Passt sich automatisch an den Umgebungslärm an, damit kein falsches Auslösen passiert.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <div class="feature-title" data-de="Blitzschnell" data-en="Lightning Fast">Blitzschnell</div>
+        <p class="feature-desc" data-de="Unter 100ms Reaktionszeit vom Klatschen bis Claude öffnet. Kein Warten, keine Umwege – sofort da." data-en="Under 100ms reaction time from clap to Claude opening. No waiting, no detours – just instant access.">
+          Unter 100ms Reaktionszeit vom Klatschen bis Claude öffnet. Kein Warten, keine Umwege – sofort da.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🌙</span>
+        <div class="feature-title" data-de="Immer im Hintergrund" data-en="Always in Background">Immer im Hintergrund</div>
+        <p class="feature-desc" data-de="Läuft als Menu-Bar-App – kein Dock-Icon, kein Fenster. Startet automatisch beim Systemstart und läuft unbemerkt." data-en="Runs as a menu-bar app – no Dock icon, no window. Starts automatically at login and runs silently.">
+          Läuft als Menu-Bar-App – kein Dock-Icon, kein Fenster. Startet automatisch beim Systemstart und läuft unbemerkt.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🎛️</span>
+        <div class="feature-title" data-de="Anpassbar" data-en="Customizable">Anpassbar</div>
+        <p class="feature-desc" data-de="Drei Empfindlichkeitsstufen (Niedrig / Mittel / Hoch). Deaktivierung per Klick. Alles direkt aus der Menüleiste erreichbar." data-en="Three sensitivity levels (Low / Medium / High). Disable with one click. Everything accessible directly from the menu bar.">
+          Drei Empfindlichkeitsstufen (Niedrig / Mittel / Hoch). Deaktivierung per Klick. Alles direkt aus der Menüleiste erreichbar.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🔒</span>
+        <div class="feature-title" data-de="Privatsphäre first" data-en="Privacy First">Privatsphäre first</div>
+        <p class="feature-desc" data-de="Kein Cloud-Upload, keine Aufzeichnung. Die Audioanalyse findet komplett lokal auf deinem Mac statt. Nur Lautstärkepegel werden analysiert." data-en="No cloud upload, no recording. Audio analysis happens entirely locally on your Mac. Only volume levels are analyzed.">
+          Kein Cloud-Upload, keine Aufzeichnung. Die Audioanalyse findet komplett lokal auf deinem Mac statt. Nur Lautstärkepegel werden analysiert.
+        </p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">💸</span>
+        <div class="feature-title" data-de="Komplett kostenlos" data-en="Completely Free">Komplett kostenlos</div>
+        <p class="feature-desc" data-de="Kein Abo, kein Freemium, keine versteckten Kosten. ClapToStart ist und bleibt kostenlos – einfach herunterladen und loslegen." data-en="No subscription, no freemium, no hidden costs. ClapToStart is and remains free – just download and go.">
+          Kein Abo, kein Freemium, keine versteckten Kosten. ClapToStart ist und bleibt kostenlos – einfach herunterladen und loslegen.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ────────────────────────────────────────────────────── -->
+<section class="how" id="how">
+  <div class="container">
+    <div class="section-label" data-de="So funktionierts" data-en="How it works">So funktionierts</div>
+    <h2 class="section-title" data-de="Drei Schritte.<br>Fertig." data-en="Three steps.<br>Done.">Drei Schritte.<br>Fertig.</h2>
+    <p class="section-sub" data-de="Einrichten dauert unter einer Minute." data-en="Setup takes under a minute.">
+      Einrichten dauert unter einer Minute.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">01</div>
+        <div class="step-title" data-de="Herunterladen & Öffnen" data-en="Download & Open">Herunterladen & Öffnen</div>
+        <p class="step-desc" data-de="ClapToStart.dmg herunterladen, öffnen und die App in den Programme-Ordner ziehen. Fertig." data-en="Download ClapToStart.dmg, open it and drag the app to your Applications folder. Done.">
+          ClapToStart.dmg herunterladen, öffnen und die App in den Programme-Ordner ziehen. Fertig.
+        </p>
+      </div>
+
+      <div class="step">
+        <div class="step-number">02</div>
+        <div class="step-title" data-de="Mikrofon erlauben" data-en="Allow Microphone">Mikrofon erlauben</div>
+        <p class="step-desc" data-de="Beim ersten Start fragt macOS nach Mikrofonzugriff. Einfach erlauben – die App hört nur auf Klatschgeräusche, nimmt aber nichts auf." data-en="On first launch macOS asks for microphone access. Just allow it – the app only listens for claps and never records anything.">
+          Beim ersten Start fragt macOS nach Mikrofonzugriff. Einfach erlauben – die App hört nur auf Klatschgeräusche, nimmt aber nichts auf.
+        </p>
+      </div>
+
+      <div class="step">
+        <div class="step-number">03</div>
+        <div class="step-title" data-de="Klatschen & loslegen" data-en="Clap & go">Klatschen & loslegen</div>
+        <p class="step-desc" data-de="Zweimal klatschen – Claude öffnet sich sofort. Über das Menüleisten-Icon lässt sich optional der Autostart aktivieren." data-en="Clap twice – Claude opens instantly. Use the menu bar icon to optionally enable launch at login.">
+          Zweimal klatschen – Claude öffnet sich sofort. Über das Menüleisten-Icon lässt sich optional der Autostart aktivieren.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Download ────────────────────────────────────────────────────────── -->
+<section class="download" id="download">
+  <div class="container">
+    <div class="download-card">
+      <span class="download-emoji">👏</span>
+      <h2 class="download-title gradient-text" data-de="Jetzt kostenlos laden" data-en="Download for free">Jetzt kostenlos laden</h2>
+      <p class="download-sub" data-de="Kein App Store, keine Anmeldung. Einfach herunterladen, öffnen und klatschen." data-en="No App Store, no sign-up. Just download, open and clap.">
+        Kein App Store, keine Anmeldung. Einfach herunterladen, öffnen und klatschen.
+      </p>
+
+      <div class="cta-group">
+        <a href="ClapToStart.dmg" class="btn-primary" download>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span data-de="ClapToStart.dmg" data-en="ClapToStart.dmg">ClapToStart.dmg</span>
+        </a>
+      </div>
+
+      <p class="requirements">
+        <span data-de="✦ macOS 13 Ventura oder neuer" data-en="✦ macOS 13 Ventura or later">✦ macOS 13 Ventura oder neuer</span>
+        <span data-de="✦ Apple Silicon & Intel" data-en="✦ Apple Silicon & Intel">✦ Apple Silicon & Intel</span>
+        <span data-de="✦ ~2 MB" data-en="✦ ~2 MB">✦ ~2 MB</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ──────────────────────────────────────────────────────────── -->
+<footer>
+  <p>
+    <span data-de="Hergestellt mit ❤ für macOS. Open Source auf " data-en="Made with ❤ for macOS. Open Source on ">Hergestellt mit ❤ für macOS. Open Source auf </span>
+    <a href="https://github.com" target="_blank" rel="noopener">GitHub</a>.
+    &nbsp;·&nbsp;
+    <span data-de="Kostenlos für immer." data-en="Free forever.">Kostenlos für immer.</span>
+  </p>
+  <p style="margin-top:8px;">© 2025 ClapToStart</p>
+</footer>
+
+<!-- ── Language JS ────────────────────────────────────────────────────── -->
+<script>
+  // Auto-detect browser language on first load
+  (function () {
+    const saved = localStorage.getItem('clap-lang');
+    const preferred = (navigator.language || '').startsWith('en') ? 'en' : 'de';
+    setLang(saved || preferred, false);
+  })();
+
+  function setLang(lang, save = true) {
+    if (save) localStorage.setItem('clap-lang', lang);
+
+    document.documentElement.lang = lang;
+
+    // Swap all data-de / data-en text nodes
+    document.querySelectorAll('[data-de][data-en]').forEach(el => {
+      const val = el.getAttribute('data-' + lang);
+      if (val !== null) {
+        // Support <br> in strings
+        if (val.includes('<br>')) {
+          el.innerHTML = val;
+        } else {
+          el.textContent = val;
+        }
+      }
+    });
+
+    // Toggle active button
+    document.getElementById('btn-de').classList.toggle('active', lang === 'de');
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+
+    // Update page title & meta
+    document.title = lang === 'de'
+      ? 'ClapToStart – Klatsch. Claude öffnet sich.'
+      : 'ClapToStart – Clap. Claude opens.';
+    document.querySelector('meta[name="description"]').content = lang === 'de'
+      ? 'ClapToStart öffnet Claude auf deinem Mac – einfach zweimal klatschen. Kostenlos.'
+      : 'ClapToStart opens Claude on your Mac – just clap twice. Free.';
+  }
+</script>
+
+</body>
+</html>
