@@ -27,6 +27,8 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>ClapToStart benötigt Mikrofonzugriff, um doppeltes Klatschen zu erkennen und Claude zu öffnen.</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 </dict>
