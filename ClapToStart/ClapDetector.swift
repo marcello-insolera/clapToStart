@@ -2,8 +2,7 @@ import AVFoundation
 import Cocoa
 
 /// Detects a double-clap via the system microphone and fires `onClapDetected`.
-/// Uses AVCaptureSession (sandbox-compatible) instead of AVAudioEngine.
-class ClapDetector: NSObject {
+class ClapDetector {
 
     // MARK: - Sensitivity
 
@@ -31,7 +30,7 @@ class ClapDetector: NSObject {
 
     // MARK: - Private
 
-    private var session: AVCaptureSession?
+    private let engine = AVAudioEngine()
     private var ambientRMS: Float = 0.001
 
     private enum ClapState {
@@ -39,17 +38,16 @@ class ClapDetector: NSObject {
         case waitingForSecond(id: UUID, firstAt: Date)
     }
     private var clapState: ClapState = .idle
-    private var lastSpikeAt: Date   = .distantPast
+    private var lastSpikeAt:   Date = .distantPast
     private var lastTriggerAt: Date = .distantPast
 
-    private let debounce:          TimeInterval = 0.15
-    private let doubleClapWindow:  TimeInterval = 0.9
-    private let cooldown:          TimeInterval = 2.0
+    private let debounce:         TimeInterval = 0.15
+    private let doubleClapWindow: TimeInterval = 0.9
+    private let cooldown:         TimeInterval = 2.0
 
     // MARK: - Init
 
-    override init() {
-        super.init()
+    init() {
         if let saved = UserDefaults.standard.string(forKey: "sensitivity"),
            let s = Sensitivity(rawValue: saved) {
             sensitivity = s
@@ -59,61 +57,82 @@ class ClapDetector: NSObject {
     // MARK: - Lifecycle
 
     func start() {
+        // Must request permission BEFORE touching AVAudioEngine.inputNode,
+        // otherwise inputNode returns a dummy silent node in sandbox.
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized:
-            startSession()
+            DispatchQueue.main.async { self.startEngine() }
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
                 DispatchQueue.main.async {
-                    granted ? self?.startSession() : self?.showPermissionAlert()
+                    if granted {
+                        self?.startEngine()
+                    } else {
+                        self?.showPermissionAlert()
+                    }
                 }
             }
         default:
-            DispatchQueue.main.async { self.showPermissionAlert() }
+            showPermissionAlert()
         }
     }
 
     func stop() {
-        session?.stopRunning()
-        session = nil
+        engine.inputNode.removeTap(onBus: 0)
+        engine.stop()
     }
 
-    // MARK: - AVCaptureSession setup
+    // MARK: - Engine
 
-    private func startSession() {
-        let s = AVCaptureSession()
+    private func startEngine() {
+        let input  = engine.inputNode
+        let format = input.outputFormat(forBus: 0)
 
-        guard let device = AVCaptureDevice.default(for: .audio) else {
-            print("ClapDetector: no audio input device found")
+        // Guard against a dummy/silent node (format has 0 sample rate when denied)
+        guard format.sampleRate > 0 else {
+            showPermissionAlert()
             return
+        }
+
+        input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buf, _ in
+            self?.process(buf)
         }
 
         do {
-            let input = try AVCaptureDeviceInput(device: device)
-            guard s.canAddInput(input) else { return }
-            s.addInput(input)
+            try engine.start()
         } catch {
-            print("ClapDetector: failed to create audio input – \(error)")
-            return
+            print("ClapDetector: engine start failed – \(error)")
         }
+    }
 
-        let output = AVCaptureAudioDataOutput()
-        let queue  = DispatchQueue(label: "com.claptostart.audio", qos: .userInteractive)
-        output.setSampleBufferDelegate(self, queue: queue)
+    // MARK: - Audio processing (audio thread)
 
-        guard s.canAddOutput(output) else { return }
-        s.addOutput(output)
+    private func process(_ buffer: AVAudioPCMBuffer) {
+        guard isEnabled,
+              let data = buffer.floatChannelData?[0] else { return }
 
-        session = s
-        s.startRunning()
+        let n = Int(buffer.frameLength)
+        guard n > 0 else { return }
+
+        var sumSq: Float = 0
+        for i in 0..<n { sumSq += data[i] * data[i] }
+        let rms = (sumSq / Float(n)).squareRoot()
+
+        ambientRMS = ambientRMS * 0.997 + rms * 0.003
+
+        let threshold = max(ambientRMS * sensitivity.multiplier, 0.03)
+
+        if rms > threshold {
+            DispatchQueue.main.async { [weak self] in self?.handleSpike() }
+        }
     }
 
     // MARK: - Double-clap state machine (main thread)
 
     private func handleSpike() {
         let now = Date()
-        guard now.timeIntervalSince(lastSpikeAt)    > debounce  else { return }
-        guard now.timeIntervalSince(lastTriggerAt)  > cooldown  else { return }
+        guard now.timeIntervalSince(lastSpikeAt)   > debounce else { return }
+        guard now.timeIntervalSince(lastTriggerAt) > cooldown else { return }
         lastSpikeAt = now
 
         switch clapState {
@@ -154,70 +173,6 @@ class ClapDetector: NSObject {
             NSWorkspace.shared.open(
                 URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!
             )
-        }
-    }
-}
-
-// MARK: - AVCaptureAudioDataOutputSampleBufferDelegate
-
-extension ClapDetector: AVCaptureAudioDataOutputSampleBufferDelegate {
-
-    func captureOutput(_ output: AVCaptureOutput,
-                       didOutput sampleBuffer: CMSampleBuffer,
-                       from connection: AVCaptureConnection) {
-
-        guard isEnabled, CMSampleBufferDataIsReady(sampleBuffer) else { return }
-
-        guard let blockBuffer = CMSampleBufferGetDataBuffer(sampleBuffer) else { return }
-
-        var totalLength = 0
-        var dataPointer: UnsafeMutablePointer<Int8>?
-        guard CMBlockBufferGetDataPointer(blockBuffer, atOffset: 0,
-                                          lengthAtOffsetOut: nil,
-                                          totalLengthOut: &totalLength,
-                                          dataPointerOut: &dataPointer) == noErr,
-              let ptr = dataPointer, totalLength > 0 else { return }
-
-        // Determine sample format from the buffer's format description
-        guard let fmtDesc = CMSampleBufferGetFormatDescription(sampleBuffer),
-              let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(fmtDesc)?.pointee
-        else { return }
-
-        let rms: Float
-
-        if asbd.mFormatFlags & kAudioFormatFlagIsFloat != 0 {
-            // Float32 PCM
-            let frameCount = totalLength / 4
-            guard frameCount > 0 else { return }
-            let floats = ptr.withMemoryRebound(to: Float.self, capacity: frameCount) {
-                UnsafeBufferPointer(start: $0, count: frameCount)
-            }
-            var sumSq: Float = 0
-            for f in floats { sumSq += f * f }
-            rms = (sumSq / Float(frameCount)).squareRoot()
-
-        } else {
-            // Int16 PCM (common on macOS built-in mic)
-            let frameCount = totalLength / 2
-            guard frameCount > 0 else { return }
-            let shorts = ptr.withMemoryRebound(to: Int16.self, capacity: frameCount) {
-                UnsafeBufferPointer(start: $0, count: frameCount)
-            }
-            var sumSq: Float = 0
-            for s in shorts {
-                let f = Float(s) / 32768.0
-                sumSq += f * f
-            }
-            rms = (sumSq / Float(frameCount)).squareRoot()
-        }
-
-        // Update slow-moving ambient level
-        ambientRMS = ambientRMS * 0.997 + rms * 0.003
-
-        let threshold = max(ambientRMS * sensitivity.multiplier, 0.03)
-
-        if rms > threshold {
-            DispatchQueue.main.async { [weak self] in self?.handleSpike() }
         }
     }
 }
